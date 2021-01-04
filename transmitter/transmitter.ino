@@ -8,9 +8,14 @@
 #include <string.h>
 #include <LiquidCrystal.h>
 
+#define CRITICAL "CRT"
 #define TOO_HOT "HOT"
 #define TOO_COLD "COL"
 #define OK "OK"
+#define TOO_HOT_LIMIT_UP 85
+#define TOO_HOT_LIMIT_DOWN 40
+#define TOO_COLD_LIMIT_UP 75
+#define TOO_COLD_LIMIT_DOWN 10
 #define TOO_HOT_ADDR 0
 #define TOO_COLD_ADDR 1
 #define THERMOMETER_INDEX 0
@@ -36,8 +41,9 @@ float currentTemperature = 0.0f;
 char msg[10] = "";
 int lcd_key = 0;
 int adc_key_in = 0;
-int too_hot = 90;
-int too_cold = 40;
+int too_hot = 25; // 85
+int too_cold = 24; // 40
+int critical = 25; // 90
 bool TOO_HOT_SELECT = false;
 bool TOO_COLD_SELECT = false;
 long previousTime = 0L;
@@ -145,6 +151,12 @@ void interpretTemperature()
     msg[3] = ':';
     msg[4] = '\0';
   }
+  else if(currentTemperature >= (float)critical)
+  {
+    strcat(msg, CRITICAL);
+    msg[3] = ':';
+    msg[4] = '\0';
+  }
   else if (currentTemperature >= (float)too_hot)
   {
     strcat(msg, TOO_HOT);
@@ -218,36 +230,36 @@ void readButtonInput()
   {
     clearRow(1);
     ++too_hot;
-    if (too_hot >= 101)
+    if (too_hot > TOO_HOT_LIMIT_UP)
     {
-      too_hot = 100;
+      too_hot = TOO_HOT_LIMIT_UP;
     }
   }
   else if (lcd_key == btnUP && TOO_COLD_SELECT == true)
   {
     clearRow(1);
     ++too_cold;
-    if (too_cold >= 81)
+    if (too_cold > TOO_COLD_LIMIT_UP)
     {
-      too_cold = 80;
+      too_cold = TOO_COLD_LIMIT_UP;
     }
   }
   else if (lcd_key == btnDOWN && TOO_HOT_SELECT == true)
   {
     clearRow(1);
     --too_hot;
-    if (too_hot <= 29)
+    if (too_hot < TOO_HOT_LIMIT_DOWN)
     {
-      too_hot = 30;
+      too_hot = TOO_HOT_LIMIT_DOWN;
     }
   }
   else if (lcd_key == btnDOWN && TOO_COLD_SELECT == true)
   {
     clearRow(1);
     --too_cold;
-    if (too_cold <= 9)
+    if (too_cold < TOO_COLD_LIMIT_DOWN)
     {
-      too_cold = 10;
+      too_cold = TOO_COLD_LIMIT_DOWN;
     }
   }
   else if (lcd_key == btnSELECT)
@@ -326,16 +338,16 @@ void clearRow(int row)
 
 /*
  * What it should do:
- * 1. Detect if temperature has gone too low and alarm
+ * 1. Detect if temperature has gone too low and alarm        CHECK
  *    itself and receiver about it
- * 2. Do the same when temperature has gone too high
- * 3. Detect if external power-source has been disconnected
+ * 2. Do the same when temperature has gone too high          CHECK
+ * 3. Detect if external power-source has been disconnected   TODO
  *    and alarm about itself and receiver about it
- * 4. Show current temperature
- * 5. Allow to change minimum and maximum temperature
- * 6. Stop alarming if temperature has gone into threshold
+ * 4. Show current temperature                                CHECK
+ * 5. Allow to change minimum and maximum temperature         IN PROGRESS
+ * 6. Stop alarming if temperature has gone into threshold    NOT IMPLEMENTING
  *    again, or if snooze button has been pressed.
- * 7. If temperature is above threshold and device is
+ * 7. If temperature is above threshold and device is         
  *    snoozed, then if it goes another 5 degrees up, it
  *    should start alarming again
  * 8. Do the same when temperature is below threshold
